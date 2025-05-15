@@ -93,11 +93,18 @@ else
         # Interactive terminal, use standard read
         read -r confirm
     else
-        # Non-interactive (curl pipe), prompt with specific instructions
+        # Non-interactive (curl pipe), use /dev/tty to read directly from terminal
         echo "Since you're running via curl, type 'y' and press Enter to continue,"
         echo "or press Ctrl+C to cancel:"
-        # Use a timeout to prevent hanging indefinitely
-        read -t 60 confirm || { echo "No input received in 60 seconds, aborting."; exit 1; }
+        # Try to read from terminal directly
+        if [ -t 1 ]; then  # If stdout is a terminal
+            read -r confirm </dev/tty
+        else
+            # If we can't read from terminal, default to no
+            echo "Can't get interactive input via curl. Use the -y option to confirm."
+            echo "Example: curl ... | sudo bash -s -- /path/to/directory -y"
+            confirm="n"
+        fi
     fi
     
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
