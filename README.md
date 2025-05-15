@@ -5,28 +5,12 @@ A powerful shell script to forcefully delete directories and their contents by h
 ![GitHub License](https://img.shields.io/github/license/Benjamin-Wegener/force_delete_directory)
 
 ## Quick Start
-
-### Method 1: Download and run (recommended)
+# Single curl command to download, execute, and run the script with confirmation
 ```bash
-# Download the script
-curl -O https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh
-
-# Make it executable
-chmod +x force_delete_directory.sh
-
-# Run it with sudo
-sudo ./force_delete_directory.sh /path/to/directory
+curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete.sh  | sudo bash -s -- /path/to/directory
 ```
 
-### Method 2: Run directly with confirmation 
-```bash
-curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh > /tmp/force_delete_directory.sh && chmod +x /tmp/force_delete_directory.sh && sudo /tmp/force_delete_directory.sh /path/to/directory
-```
-
-### Method 3: Run directly without confirmation
-```bash
-curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh > /tmp/force_delete_directory.sh && chmod +x /tmp/force_delete_directory.sh && sudo /tmp/force_delete_directory.sh /path/to/directory -y
-```
+💡 Replace /path/to/directory with the actual directory you want to delete. 
 
 ## Overview
 
