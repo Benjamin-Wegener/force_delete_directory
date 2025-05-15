@@ -26,13 +26,23 @@ if [ ! -d "$TARGET_DIR" ]; then
     exit 1
 fi
 
-echo "WARNING: This script will forcefully delete '$TARGET_DIR' and ALL its contents."
-echo "This action cannot be undone. Are you sure you want to continue? (y/N)"
-read -r confirm
-
-if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-    echo "Operation canceled."
-    exit 0
+# Determine if script is being piped through curl or wget
+# If being piped, we'll add a -y flag automatically but warn the user
+if [ ! -t 0 ]; then  # Check if stdin is not a terminal
+    echo "WARNING: This script will forcefully delete '$TARGET_DIR' and ALL its contents."
+    echo "Since you're running this via curl/wget pipe to bash, we're proceeding automatically."
+    echo "If this is NOT what you want, press Ctrl+C NOW (you have 5 seconds)..."
+    sleep 5
+    FORCE_YES=true
+else
+    # Normal interactive prompt
+    echo "WARNING: This script will forcefully delete '$TARGET_DIR' and ALL its contents."
+    echo "This action cannot be undone. Are you sure you want to continue? (y/N)"
+    read -r confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "Operation canceled."
+        exit 0
+    fi
 fi
 
 echo "Starting forced deletion of '$TARGET_DIR'..."
