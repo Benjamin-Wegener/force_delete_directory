@@ -9,7 +9,7 @@ A powerful shell script to forcefully delete directories and their contents by h
 Run without installation (requires sudo privileges):
 
 ```bash
-curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete.sh | sudo bash -s -- /path/to/directory
+curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh | sudo bash -s -- /path/to/directory
 ```
 
 ## Overview
