@@ -28,27 +28,6 @@ print_status() {
     echo -e "${COLOR}[STATUS] $message${NC}"
 }
 
-# Print a progress indicator for long operations
-progress_indicator() {
-    local pid=$1
-    local message="$2"
-    local delay=0.2
-    local spinstr='|/-\'
-    
-    echo -n "$message "
-    
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    
-    printf "    \b\b\b\b"
-    echo "Done!"
-}
-
 # Check if script is run as root
 if [ "$(id -u)" -ne 0 ]; then
     print_status "red" "This script requires root privileges to handle all permissions."
@@ -63,13 +42,16 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# Check for an explicit -y or --yes flag as the second parameter
-FORCE_YES=false
-if [ "$2" = "-y" ] || [ "$2" = "--yes" ]; then
-    FORCE_YES=true
-fi
-
 TARGET_DIR="$1"
+FORCE_YES=false
+
+# Check for -y or --yes option (can be in any position)
+for arg in "$@"; do
+    if [ "$arg" = "-y" ] || [ "$arg" = "--yes" ]; then
+        FORCE_YES=true
+        break
+    fi
+done
 
 # Check if directory exists
 if [ ! -d "$TARGET_DIR" ]; then
@@ -87,25 +69,7 @@ if [ "$FORCE_YES" = true ]; then
 else
     print_status "yellow" "WARNING: This script will forcefully delete '$TARGET_DIR' and ALL its contents."
     echo "This action cannot be undone. Are you sure you want to continue? (y/N)"
-    
-    # Check if stdin is a terminal (interactive) or not (curl pipe)
-    if [ -t 0 ]; then
-        # Interactive terminal, use standard read
-        read -r confirm
-    else
-        # Non-interactive (curl pipe), use /dev/tty to read directly from terminal
-        echo "Since you're running via curl, type 'y' and press Enter to continue,"
-        echo "or press Ctrl+C to cancel:"
-        # Try to read from terminal directly
-        if [ -t 1 ]; then  # If stdout is a terminal
-            read -r confirm </dev/tty
-        else
-            # If we can't read from terminal, default to no
-            echo "Can't get interactive input via curl. Use the -y option to confirm."
-            echo "Example: curl ... | sudo bash -s -- /path/to/directory -y"
-            confirm="n"
-        fi
-    fi
+    read -r confirm
     
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         print_status "blue" "Operation canceled."
