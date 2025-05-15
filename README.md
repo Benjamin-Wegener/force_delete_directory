@@ -12,6 +12,8 @@ Run without installation (requires sudo privileges):
 curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh | sudo bash -s -- /path/to/directory
 ```
 
+> **Note**: When running via curl, the script will automatically proceed after a 5-second countdown to allow cancellation.
+
 ## Overview
 
 This tool solves the frustrating problem of directories that resist deletion through standard methods. When you need to remove a directory that's locked by permissions, running processes, or active mounts, this script provides a comprehensive solution.
