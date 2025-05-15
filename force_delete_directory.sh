@@ -69,9 +69,8 @@ if [ "$FORCE_YES" = true ]; then
 else
     print_status "yellow" "WARNING: This script will forcefully delete '$TARGET_DIR' and ALL its contents."
     echo "This action cannot be undone. Are you sure you want to continue? (y/N)"
-    # Read from TTY to avoid issues when script is piped
-    read -r confirm < /dev/tty
-
+    read -r confirm
+    
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         print_status "blue" "Operation canceled."
         exit 0
