@@ -6,17 +6,27 @@ A powerful shell script to forcefully delete directories and their contents by h
 
 ## Quick Start
 
-### Option 1: Interactive with confirmation
+### Method 1: Download and run (recommended)
 ```bash
-curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh | sudo bash -s -- /path/to/directory
+# Download the script
+curl -O https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh
+
+# Make it executable
+chmod +x force_delete_directory.sh
+
+# Run it with sudo
+sudo ./force_delete_directory.sh /path/to/directory
 ```
 
-### Option 2: Non-interactive (skip confirmation)
+### Method 2: Run directly with confirmation 
 ```bash
-curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh | sudo bash -s -- /path/to/directory -y
+curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh > /tmp/force_delete_directory.sh && chmod +x /tmp/force_delete_directory.sh && sudo /tmp/force_delete_directory.sh /path/to/directory
 ```
 
-> **Note**: When running via curl without the `-y` flag, the script will attempt to read confirmation directly from your terminal. If that's not possible, it will suggest using the `-y` option.
+### Method 3: Run directly without confirmation
+```bash
+curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh > /tmp/force_delete_directory.sh && chmod +x /tmp/force_delete_directory.sh && sudo /tmp/force_delete_directory.sh /path/to/directory -y
+```
 
 ## Overview
 
