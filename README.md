@@ -16,6 +16,8 @@ curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_director
 curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh | sudo bash -s -- /path/to/directory -y
 ```
 
+> **Note**: When running via curl without the `-y` flag, the script will attempt to read confirmation directly from your terminal. If that's not possible, it will suggest using the `-y` option.
+
 ## Overview
 
 This tool solves the frustrating problem of directories that resist deletion through standard methods. When you need to remove a directory that's locked by permissions, running processes, or active mounts, this script provides a comprehensive solution.
