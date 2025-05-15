@@ -6,13 +6,15 @@ A powerful shell script to forcefully delete directories and their contents by h
 
 ## Quick Start
 
-Run without installation (requires sudo privileges):
-
+### Option 1: Interactive with confirmation
 ```bash
 curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh | sudo bash -s -- /path/to/directory
 ```
 
-> **Note**: When running via curl, the script will automatically proceed after a 5-second countdown to allow cancellation.
+### Option 2: Non-interactive (skip confirmation)
+```bash
+curl -s https://raw.githubusercontent.com/Benjamin-Wegener/force_delete_directory/main/force_delete_directory.sh | sudo bash -s -- /path/to/directory -y
+```
 
 ## Overview
 
@@ -48,8 +50,17 @@ chmod +x force_delete.sh
 The script requires root privileges to handle all potential permission issues:
 
 ```bash
-sudo ./force_delete.sh /path/to/directory
+sudo ./force_delete_directory.sh /path/to/directory
 ```
+
+### Command line options
+
+```bash
+sudo ./force_delete_directory.sh /path/to/directory [options]
+```
+
+Available options:
+- `-y` or `--yes`: Skip confirmation prompt and proceed with deletion
 
 ### Example
 
