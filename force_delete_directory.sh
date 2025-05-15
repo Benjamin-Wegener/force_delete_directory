@@ -2,20 +2,20 @@
 
 # Force Delete Directory Script
 # This script forcefully deletes a directory and all its contents
-# Handles permissions, running processes, and mounts
+# Handles permissions, running processes, mounts, and nested chroot mounts
 
 # Print colored status messages
 print_status() {
     local color="$1"
     local message="$2"
-    
+
     # Color codes
     local RED='\033[0;31m'
     local GREEN='\033[0;32m'
     local YELLOW='\033[1;33m'
     local BLUE='\033[0;34m'
     local NC='\033[0m' # No Color
-    
+
     # Select color
     case "$color" in
         "red") local COLOR="$RED" ;;
@@ -24,7 +24,7 @@ print_status() {
         "blue") local COLOR="$BLUE" ;;
         *) local COLOR="$NC" ;;
     esac
-    
+
     echo -e "${COLOR}[STATUS] $message${NC}"
 }
 
@@ -70,7 +70,7 @@ else
     print_status "yellow" "WARNING: This script will forcefully delete '$TARGET_DIR' and ALL its contents."
     echo "This action cannot be undone. Are you sure you want to continue? (y/N)"
     read -r confirm
-    
+
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         print_status "blue" "Operation canceled."
         exit 0
@@ -83,15 +83,15 @@ print_status "green" "Starting forced deletion of '$TARGET_DIR'..."
 kill_processes() {
     local dir="$1"
     print_status "blue" "Finding and killing processes using '$dir'..."
-    
+
     # Find processes using files in the directory
     local procs=$(lsof +D "$dir" 2>/dev/null | awk '{if (NR>1) print $2}' | sort -u)
-    
+
     if [ -z "$procs" ]; then
         echo "No processes found using the directory."
         return 0
     fi
-    
+
     for pid in $procs; do
         if [ -n "$pid" ]; then
             echo "Killing process $pid ($(ps -p "$pid" -o comm= 2>/dev/null))"
@@ -99,7 +99,7 @@ kill_processes() {
             sleep 0.1
         fi
     done
-    
+
     echo "All processes terminated."
 }
 
@@ -107,45 +107,64 @@ kill_processes() {
 unmount_filesystems() {
     local dir="$1"
     print_status "blue" "Checking for and unmounting filesystems under '$dir'..."
-    
+
     # Find all mount points under the directory
     local mounts=$(mount | grep -E "on $dir(/|\s)" | awk '{print $3}' | sort -r)
-    
+
     if [ -z "$mounts" ]; then
         echo "No mounted filesystems found under the directory."
         return 0
     fi
-    
+
     for mount_point in $mounts; do
         echo "Unmounting $mount_point"
         umount -f "$mount_point" 2>/dev/null || umount -l "$mount_point" 2>/dev/null
-        
+
         # Check if unmount was successful
         if mountpoint -q "$mount_point"; then
             echo "Warning: Could not unmount $mount_point. Trying lazy unmount..."
             umount -l "$mount_point"
         fi
     done
-    
+
     echo "All filesystems unmounted."
+}
+
+# Function to unmount nested mounts like chroot
+unmount_chroot_style() {
+    local dir="$1"
+    print_status "blue" "Checking for nested mounts (e.g., chroot) under '$dir'..."
+
+    # Find all mount points inside the target directory recursively
+    while read -r mount_point; do
+        echo "Unmounting nested mount at $mount_point"
+        umount -f "$mount_point" 2>/dev/null || umount -l "$mount_point" 2>/dev/null
+
+        if mountpoint -q "$mount_point"; then
+            echo "ERROR: Could not unmount $mount_point. It might be busy or corrupted."
+            return 1
+        fi
+    done < <(grep -E " /.*$dir" /proc/mounts | awk '{print $2}' | sort -r)
+
+    echo "All nested mounts handled."
 }
 
 # Function to take ownership and set full permissions on directory and contents
 take_ownership() {
     local dir="$1"
     print_status "blue" "Taking ownership and setting full permissions on '$dir'..."
-    
+
     # First handle top level directory to make it accessible
     echo "Setting permissions on top level directory..."
     chmod 777 "$dir" 2>/dev/null
     chown $(whoami) "$dir" 2>/dev/null
-    
+
     # Count items for progress reporting
     local file_count=$(find "$dir" -type f | wc -l)
     local dir_count=$(find "$dir" -type d | wc -l)
     echo "Found approximately $file_count files and $dir_count directories to process"
-    
-    # Process directories first - avoid using find -exec for better progress visibility
+
+    # Process directories first
     echo "Setting permissions on directories..."
     local counter=0
     local total_dirs=$((dir_count > 0 ? dir_count : 1))  # Avoid division by zero
@@ -158,7 +177,7 @@ take_ownership() {
         fi
     done
     printf "\rProgress: %d/%d directories (100%%)      \n" $dir_count $dir_count
-    
+
     # Then process files
     echo "Setting permissions on files..."
     counter=0
@@ -172,11 +191,11 @@ take_ownership() {
         fi
     done
     printf "\rProgress: %d/%d files (100%%)      \n" $file_count $file_count
-    
+
     # Change ownership of everything
     echo "Changing ownership of all files and directories..."
     chown -R $(whoami) "$dir" 2>/dev/null
-    
+
     echo "Permission changes complete."
 }
 
@@ -189,33 +208,46 @@ kill_processes "$TARGET_DIR"
 # Unmount any filesystems within the directory
 unmount_filesystems "$TARGET_DIR"
 
-# Take ownership of the directory
-take_ownership "$TARGET_DIR"
+# Try deletion after unmounting
+if [ -d "$TARGET_DIR" ]; then
+    print_status "blue" "Trying early deletion after unmounting..."
+    rm -rf "$TARGET_DIR" 2>/dev/null
+fi
 
-# Optional: Wait a moment for processes to fully terminate
-sleep 1
+# If still exists, try unmounting nested/chroot mounts
+if [ -d "$TARGET_DIR" ]; then
+    unmount_chroot_style "$TARGET_DIR"
+fi
 
-# Final deletion with force options
-print_status "blue" "Removing directory '$TARGET_DIR'..."
-rm -rf "$TARGET_DIR"
+# Try deletion again after nested unmount
+if [ -d "$TARGET_DIR" ]; then
+    print_status "blue" "Trying deletion after nested unmount..."
+    rm -rf "$TARGET_DIR" 2>/dev/null
+fi
 
-# Check if directory was successfully deleted
+# If still exists, take ownership and try again
+if [ -d "$TARGET_DIR" ]; then
+    take_ownership "$TARGET_DIR"
+    rm -rf "$TARGET_DIR" 2>/dev/null
+fi
+
+# Final check
 if [ ! -d "$TARGET_DIR" ]; then
     print_status "green" "SUCCESS: Directory '$TARGET_DIR' has been deleted."
 else
     print_status "yellow" "Warning: Directory '$TARGET_DIR' still exists."
     echo "Using more aggressive deletion method..."
-    
+
     # More aggressive approach - set everything to writable and try again
     echo "Setting all files and directories to fully writable..."
     find "$TARGET_DIR" -type d -exec chmod -R 777 {} \; 2>/dev/null
     find "$TARGET_DIR" -type f -exec chmod -R 666 {} \; 2>/dev/null
-    
+
     # Try delete again with verbose output
     echo "Attempting deletion with verbose output..."
     rm -rfv "$TARGET_DIR"
-    
-    # Final check
+
+    # Final final check
     if [ ! -d "$TARGET_DIR" ]; then
         print_status "green" "SUCCESS: Directory '$TARGET_DIR' has been successfully deleted."
     else
